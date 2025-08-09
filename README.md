@@ -1,4 +1,4 @@
-# Arch Linux Automated Installer
+# Arch Linux Automated Installer named Arch Shelly installer
 
 This repository contains two scripts for a fully automated Arch Linux installation:
 
@@ -31,7 +31,7 @@ ROOT_PART=3
 LOCALE=en_US.UTF-8
 
 # Hostname
-HOSTNAME=myarch
+HOSTNAME=Shelly
 
 # Root password
 ROOT_PASSWORD=changeme
