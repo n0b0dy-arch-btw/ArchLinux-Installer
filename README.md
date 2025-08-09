@@ -1,68 +1,58 @@
-# Arch Linux Automated Base Installer
+#!/usr/bin/env bash
+set -euo pipefail
 
-This repository contains a **Bash script** and **configuration file** for automating a **base Arch Linux installation**.
+source postinstall.conf
 
-Instead of manually typing every installation command, you just edit a small `install.conf` file with your preferences, and the script takes care of the rest.
+if [[ $EUID -ne 0 ]]; then
+    echo "Please run as root."
+    exit 1
+fi
 
----
+pacman --noconfirm -S sudo
 
-## 📋 Features
-- Automated base Arch Linux installation using your configuration
-- User-editable `install.conf` for keyboard layout, timezone, drive, locale, hostname, and root password
-- Safety check before writing to your disk
-- Fully scripted chroot configuration (no manual typing in `arch-chroot`)
-- Minimal base install with `base`, `linux`, `linux-firmware`, and `nano`
-- GRUB bootloader and NetworkManager pre-installed and enabled
+useradd -m -G wheel -s /bin/bash "$USERNAME"
+echo "$USERNAME:$USER_PASSWORD" | chpasswd
 
----
+sed -i 's/^# %wheel ALL=(ALL) ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
-## ⚠️ Disclaimer
-This script will **erase data** on the selected drive.  
-Make sure you have backups of any important data before proceeding.
+case "$DESKTOP" in
+    gnome)
+        pacman --noconfirm -S gnome gnome-extra gdm
+        systemctl enable gdm
+        ;;
+    kde|plasma)
+        pacman --noconfirm -S plasma kde-applications sddm
+        systemctl enable sddm
+        ;;
+    xfce)
+        pacman --noconfirm -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter
+        systemctl enable lightdm
+        ;;
+    cinnamon)
+        pacman --noconfirm -S cinnamon lightdm lightdm-gtk-greeter
+        systemctl enable lightdm
+        ;;
+    mate)
+        pacman --noconfirm -S mate mate-extra lightdm lightdm-gtk-greeter
+        systemctl enable lightdm
+        ;;
+    lxqt)
+        pacman --noconfirm -S lxqt sddm
+        systemctl enable sddm
+        ;;
+    i3)
+        pacman --noconfirm -S i3 dmenu xorg-xinit
+        echo "exec i3" > /home/$USERNAME/.xinitrc
+        chown $USERNAME:$USERNAME /home/$USERNAME/.xinitrc
+        ;;
+    *)
+        echo "Unknown desktop environment: $DESKTOP"
+        exit 1
+        ;;
+esac
 
-You are responsible for ensuring that your `install.conf` is correct.  
-If you select the wrong drive, **it will be overwritten**.
+pacman --noconfirm -S xorg network-manager-applet firefox
 
----
+systemctl enable NetworkManager
 
-## 🖥️ Requirements
-- A bootable Arch Linux ISO (download from: https://archlinux.org/download/)
-- Internet connection
-- Some basic understanding of Linux partitions
-- You have **manually partitioned** your drive beforehand (e.g., using `fdisk` or `cfdisk`)
-
----
-
-## 📂 Files
-- **`install.conf`** — User configuration file
-- **`arch_install.sh`** — Installation script
-
----
-
-## ⚙️ Configuration
-
-Before running the script, edit `install.conf` with your preferences:
-
-```bash
-# Keyboard layout (e.g. us, uk, de)
-KEYMAP=uk
-
-# Timezone
-TIMEZONE=Europe/London
-
-# Drive label (no partition number, e.g. sda, nvme0n1)
-DRIVE=sda
-
-# Partition numbers (adjust to your partitioning scheme)
-BOOT_PART=1
-SWAP_PART=2
-ROOT_PART=3
-
-# Locale
-LOCALE=en_US.UTF-8
-
-# Hostname
-HOSTNAME=myarch
-
-# Root password
-ROOT_PASSWORD=changeme
+echo "Post-install complete! Reboot and log in as $USERNAME."
