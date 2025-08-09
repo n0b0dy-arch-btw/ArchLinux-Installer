@@ -1,58 +1,37 @@
-#!/usr/bin/env bash
-set -euo pipefail
+# Arch Linux Automated Installer
 
-source postinstall.conf
+This repository contains two scripts for a fully automated Arch Linux installation:
 
-if [[ $EUID -ne 0 ]]; then
-    echo "Please run as root."
-    exit 1
-fi
+1. **arch_install.sh** — installs a base Arch Linux system using a config file.
+2. **post_install.sh** — installs a desktop environment, creates a user, enables sudo, and sets up a full desktop system.
 
-pacman --noconfirm -S sudo
+With these scripts and their configuration files, you can install Arch Linux from scratch and get a working desktop with minimal manual input.
 
-useradd -m -G wheel -s /bin/bash "$USERNAME"
-echo "$USERNAME:$USER_PASSWORD" | chpasswd
+---
 
-sed -i 's/^# %wheel ALL=(ALL) ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers
+## Included Files
 
-case "$DESKTOP" in
-    gnome)
-        pacman --noconfirm -S gnome gnome-extra gdm
-        systemctl enable gdm
-        ;;
-    kde|plasma)
-        pacman --noconfirm -S plasma kde-applications sddm
-        systemctl enable sddm
-        ;;
-    xfce)
-        pacman --noconfirm -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
-        ;;
-    cinnamon)
-        pacman --noconfirm -S cinnamon lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
-        ;;
-    mate)
-        pacman --noconfirm -S mate mate-extra lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
-        ;;
-    lxqt)
-        pacman --noconfirm -S lxqt sddm
-        systemctl enable sddm
-        ;;
-    i3)
-        pacman --noconfirm -S i3 dmenu xorg-xinit
-        echo "exec i3" > /home/$USERNAME/.xinitrc
-        chown $USERNAME:$USERNAME /home/$USERNAME/.xinitrc
-        ;;
-    *)
-        echo "Unknown desktop environment: $DESKTOP"
-        exit 1
-        ;;
-esac
+### install.conf (Base Install Config)
+```bash
+# Keyboard layout (e.g. us, uk, de)
+KEYMAP=uk
 
-pacman --noconfirm -S xorg network-manager-applet firefox
+# Timezone
+TIMEZONE=Europe/London
 
-systemctl enable NetworkManager
+# Drive label (without partition number, e.g. sda, nvme0n1)
+DRIVE=sda
 
-echo "Post-install complete! Reboot and log in as $USERNAME."
+# Partition numbers
+BOOT_PART=1
+SWAP_PART=2
+ROOT_PART=3
+
+# Locale
+LOCALE=en_US.UTF-8
+
+# Hostname
+HOSTNAME=myarch
+
+# Root password
+ROOT_PASSWORD=changeme
