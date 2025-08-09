@@ -18,9 +18,8 @@ echo "=== Creating user '$USERNAME' ==="
 useradd -m -G wheel -s /bin/bash "$USERNAME"
 echo "$USERNAME:$USER_PASSWORD" | chpasswd
 
-echo "=== Enabling sudo for wheel group ==="
-# Uncomment '%wheel ALL=(ALL) ALL' in sudoers
-sed -i 's/^# %wheel ALL=(ALL) ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers
+echo "=== Opening sudoers file with nano ==="
+EDITOR=nano visudo
 
 echo "=== Installing desktop environment: $DESKTOP ==="
 
