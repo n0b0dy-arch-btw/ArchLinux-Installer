@@ -1,5 +1,7 @@
 # Arch Linux Automated Installer named Arch Shelly installer
 
+# YouTube video on how to install it: https://youtu.be/uwNUb4c5P-k?si=lPZ4L6zgrMUiLh-I
+
 This repository contains two scripts for a fully automated Arch Linux installation:
 
 1. **arch_install.sh** — installs a base Arch Linux system using a config file.
