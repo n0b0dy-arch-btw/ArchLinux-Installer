@@ -11,47 +11,74 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "=== Installing sudo ==="
-pacman --noconfirm -S sudo
+# Spinner function
+spinner() {
+    local pid=$1
+    local message="$2"
+    local delay=0.1
+    local spin_chars='| / - \'
+    echo -n "$message "
+    while kill -0 "$pid" 2>/dev/null; do
+        for char in $spin_chars; do
+            printf "\b$char"
+            sleep $delay
+        done
+    done
+    echo -e "\bDone!"
+}
 
-echo "=== Creating user '$USERNAME' ==="
-useradd -m -G wheel -s /bin/bash "$USERNAME"
-echo "$USERNAME:$USER_PASSWORD" | chpasswd
+# Function to run a command silently with spinner
+run_step() {
+    local message="$1"
+    shift
+    (
+        "$@" >/dev/null 2>&1
+    ) &
+    spinner $! "$message"
+}
 
-echo "=== Opening sudoers file with nano ==="
+# Steps
+run_step "Installing sudo..." pacman --noconfirm -S sudo
+
+run_step "Creating user '$USERNAME'..." bash -c "
+    useradd -m -G wheel -s /bin/bash \"$USERNAME\" &&
+    echo \"$USERNAME:$USER_PASSWORD\" | chpasswd
+"
+
+echo "Opening sudoers file with nano..."
 EDITOR=nano visudo
-
-echo "=== Installing desktop environment: $DESKTOP ==="
 
 case "$DESKTOP" in
     gnome)
-        pacman --noconfirm -S gnome gnome-extra gdm
-        systemctl enable gdm
+        run_step "Installing GNOME desktop..." pacman --noconfirm -S gnome gnome-extra gdm
+        run_step "Enabling GDM..." systemctl enable gdm
         ;;
     kde|plasma)
-        pacman --noconfirm -S plasma kde-applications sddm
-        systemctl enable sddm
+        run_step "Installing KDE Plasma desktop..." pacman --noconfirm -S plasma kde-applications sddm
+        run_step "Enabling SDDM..." systemctl enable sddm
         ;;
     xfce)
-        pacman --noconfirm -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
+        run_step "Installing XFCE desktop..." pacman --noconfirm -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter
+        run_step "Enabling LightDM..." systemctl enable lightdm
         ;;
     cinnamon)
-        pacman --noconfirm -S cinnamon lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
+        run_step "Installing Cinnamon desktop..." pacman --noconfirm -S cinnamon lightdm lightdm-gtk-greeter
+        run_step "Enabling LightDM..." systemctl enable lightdm
         ;;
     mate)
-        pacman --noconfirm -S mate mate-extra lightdm lightdm-gtk-greeter
-        systemctl enable lightdm
+        run_step "Installing MATE desktop..." pacman --noconfirm -S mate mate-extra lightdm lightdm-gtk-greeter
+        run_step "Enabling LightDM..." systemctl enable lightdm
         ;;
     lxqt)
-        pacman --noconfirm -S lxqt sddm
-        systemctl enable sddm
+        run_step "Installing LXQt desktop..." pacman --noconfirm -S lxqt sddm
+        run_step "Enabling SDDM..." systemctl enable sddm
         ;;
     i3)
-        pacman --noconfirm -S i3 dmenu xorg-xinit
-        echo "exec i3" > /home/$USERNAME/.xinitrc
-        chown $USERNAME:$USERNAME /home/$USERNAME/.xinitrc
+        run_step "Installing i3 window manager..." pacman --noconfirm -S i3 dmenu xorg-xinit
+        bash -c "
+            echo \"exec i3\" > /home/$USERNAME/.xinitrc &&
+            chown $USERNAME:$USERNAME /home/$USERNAME/.xinitrc
+        " >/dev/null 2>&1
         ;;
     *)
         echo "Unknown desktop environment: $DESKTOP"
@@ -59,11 +86,7 @@ case "$DESKTOP" in
         ;;
 esac
 
-echo "=== Installing essential applications ==="
-pacman --noconfirm -S xorg network-manager-applet firefox
+run_step "Installing essential applications..." pacman --noconfirm -S xorg network-manager-applet firefox
+run_step "Enabling NetworkManager..." systemctl enable NetworkManager
 
-echo "=== Enabling NetworkManager ==="
-systemctl enable NetworkManager
-
-echo "=== Post-installation complete! ==="
-echo "You can now reboot into your new desktop environment."
+echo "Post-installation complete! You can now reboot into your new desktop environment."
