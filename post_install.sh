@@ -89,4 +89,11 @@ esac
 run_step "Installing essential applications..." pacman --noconfirm -S xorg network-manager-applet firefox
 run_step "Enabling NetworkManager..." systemctl enable NetworkManager
 
+
+if [[ "${INSTALL_NVIDIA,,}" == "yes" ]]; then
+    run_step "Installing NVIDIA drivers..." pacman --noconfirm -S nvidia nvidia-utils nvidia-settings
+    echo "NVIDIA drivers installed successfully."
+fi
+
+
 echo "Post-installation complete! You can now reboot into your new desktop environment."
