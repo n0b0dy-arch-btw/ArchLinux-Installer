@@ -1,6 +1,6 @@
 # Arch Linux Automated Installer named Arch Shelly installer
 
-# YouTube video on how to install it: https://youtu.be/uwNUb4c5P-k?si=lPZ4L6zgrMUiLh-I
+# YouTube video on how to install it (VIDEO UPDATES WHEN NEW FETURES ARE ADDED: https://youtu.be/uwNUb4c5P-k?si=lPZ4L6zgrMUiLh-I
 
 # Still Getting Worked on but should work fine once the scipt is done and works flawless i will change this
 
