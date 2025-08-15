@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load configuration
+# ======================================
+# Load Configuration
+# ======================================
 source postinstall.conf
 
-# Check if running as root
+# ======================================
+# Check for Root
+# ======================================
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root inside your installed Arch system."
     echo "Example: sudo ./post_install.sh"
     exit 1
 fi
 
-# Spinner function
+# ======================================
+# Functions
+# ======================================
+
+# Spinner animation
 spinner() {
     local pid=$1
     local message="$2"
@@ -27,7 +35,7 @@ spinner() {
     echo -e "\bDone!"
 }
 
-# Function to run a command silently with spinner
+# Run a step with spinner
 run_step() {
     local message="$1"
     shift
@@ -37,7 +45,10 @@ run_step() {
     spinner $! "$message"
 }
 
-# Steps
+# ======================================
+# Core Setup
+# ======================================
+
 run_step "Installing sudo..." pacman --noconfirm -S sudo
 
 run_step "Creating user '$USERNAME'..." bash -c "
@@ -48,6 +59,9 @@ run_step "Creating user '$USERNAME'..." bash -c "
 echo "Opening sudoers file with nano..."
 EDITOR=nano visudo
 
+# ======================================
+# Desktop Environment Installation
+# ======================================
 case "$DESKTOP" in
     gnome)
         run_step "Installing GNOME desktop..." pacman --noconfirm -S gnome gnome-extra gdm
@@ -86,14 +100,28 @@ case "$DESKTOP" in
         ;;
 esac
 
-run_step "Installing essential applications..." pacman --noconfirm -S xorg network-manager-applet firefox
+# ======================================
+# Essentials
+# ======================================
+run_step "Installing essential applications..." pacman --noconfirm -S xorg network-manager-applet
 run_step "Enabling NetworkManager..." systemctl enable NetworkManager
 
-
+# ======================================
+# Optional NVIDIA Drivers
+# ======================================
 if [[ "${INSTALL_NVIDIA,,}" == "yes" ]]; then
     run_step "Installing NVIDIA drivers..." pacman --noconfirm -S nvidia nvidia-utils nvidia-settings
     echo "NVIDIA drivers installed successfully."
 fi
 
+# ======================================
+# Extra Packages from Config
+# ======================================
+if [[ -n "${EXTRA_PACKAGES:-}" ]]; then
+    run_step "Installing extra packages..." pacman --noconfirm -S ${EXTRA_PACKAGES}
+fi
 
+# ======================================
+# Done
+# ======================================
 echo "Post-installation complete! You can now reboot into your new desktop environment."
