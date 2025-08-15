@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load configuration
+# ======================================
+# Load Configuration
+# ======================================
 source install.conf
 
-# Confirm before proceeding
-echo "!!! WARNING !!!"
-echo "This will install Arch Linux on /dev/$DRIVE"
+# ======================================
+# Confirmation Prompt
+# ======================================
+echo "=== Arch Linux Installation ==="
+echo "Target Drive: /dev/$DRIVE"
 echo "BOOT: /dev/${DRIVE}${BOOT_PART}"
 echo "SWAP: /dev/${DRIVE}${SWAP_PART}"
 echo "ROOT: /dev/${DRIVE}${ROOT_PART}"
-read -p "Type 'yes' to continue: " CONFIRM
+echo
+read -p "Type 'yes' to confirm installation: " CONFIRM
 [[ "$CONFIRM" == "yes" ]] || { echo "Aborted."; exit 1; }
 
-# Spinner function
+# ======================================
+# Spinner Function
+# ======================================
 spinner() {
     local pid=$1
+    local message="$2"
     local delay=0.1
     local spin_chars='| / - \\'
-    echo -n "Installing Arch Linux "
+    echo -n "$message "
     while kill -0 "$pid" 2>/dev/null; do
         for char in $spin_chars; do
             printf "\b$char"
@@ -28,32 +36,34 @@ spinner() {
     echo -e "\bDone!"
 }
 
-# Run the whole installation silently in the background
+# ======================================
+# Installation Process
+# ======================================
 (
     # 1. Keyboard layout
-    loadkeys "$KEYMAP" >/dev/null 2>&1
+    loadkeys "$KEYMAP"
 
     # 2. Enable NTP
-    timedatectl set-ntp true >/dev/null 2>&1
+    timedatectl set-ntp true
 
     # 3. Format partitions
-    mkfs.ext4 /dev/${DRIVE}${ROOT_PART} >/dev/null 2>&1
-    mkswap /dev/${DRIVE}${SWAP_PART} >/dev/null 2>&1
-    mkfs.fat -F 32 /dev/${DRIVE}${BOOT_PART} >/dev/null 2>&1
+    mkfs.ext4 -F /dev/${DRIVE}${ROOT_PART}
+    mkswap /dev/${DRIVE}${SWAP_PART}
+    mkfs.fat -F 32 /dev/${DRIVE}${BOOT_PART}
 
     # 4. Mount partitions
-    mount /dev/${DRIVE}${ROOT_PART} /mnt >/dev/null 2>&1
-    mount --mkdir /dev/${DRIVE}${BOOT_PART} /mnt/boot >/dev/null 2>&1
-    swapon /dev/${DRIVE}${SWAP_PART} >/dev/null 2>&1
+    mount /dev/${DRIVE}${ROOT_PART} /mnt
+    mount --mkdir /dev/${DRIVE}${BOOT_PART} /mnt/boot
+    swapon /dev/${DRIVE}${SWAP_PART}
 
     # 5. Install base packages
-    pacstrap -K /mnt base linux linux-firmware nano >/dev/null 2>&1
+    pacstrap -K /mnt base linux linux-firmware nano ${BASE_PACKAGES}
 
     # 6. Generate fstab
-    genfstab -U /mnt >> /mnt/etc/fstab 2>/dev/null
+    genfstab -U /mnt >> /mnt/etc/fstab
 
-    # 7. Chroot and configure the system
-    arch-chroot /mnt /bin/bash <<EOF >/dev/null 2>&1
+    # 7. System Configuration
+    arch-chroot /mnt /bin/bash <<EOF
 # Timezone
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
@@ -83,7 +93,10 @@ EOF
 ) &
 installer_pid=$!
 
-# Show spinner until process finishes
-spinner $installer_pid
+# Show spinner until installation finishes
+spinner $installer_pid "Installing Arch Linux"
 
-echo "Installation complete! You can now reboot into your new Arch Linux system."
+# ======================================
+# Finish
+# ======================================
+echo "✅ Installation complete! You can now reboot into your new Arch Linux system."
