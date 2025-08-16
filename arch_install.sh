@@ -19,24 +19,6 @@ read -p "Type 'yes' to confirm installation: " CONFIRM
 [[ "$CONFIRM" == "yes" ]] || { echo "Aborted."; exit 1; }
 
 # ======================================
-# Spinner Function
-# ======================================
-spinner() {
-    local pid=$1
-    local message="$2"
-    local delay=0.1
-    local spin_chars='| / - \\'
-    echo -n "$message "
-    while kill -0 "$pid" 2>/dev/null; do
-        for char in $spin_chars; do
-            printf "\b$char"
-            sleep $delay
-        done
-    done
-    echo -e "\bDone!"
-}
-
-# ======================================
 # Installation Process
 # ======================================
 (
